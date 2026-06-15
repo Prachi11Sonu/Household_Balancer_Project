@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="heading"><h1>Groups And Membership</h1></div>
+<section class="grid two">
+  <form method="post" class="panel">
+    <h2>Create Group</h2>
+    <label>Name <input name="name" required></label>
+    <button type="submit">Create</button>
+  </form>
+  <form method="post" action="{{ url_for('add_membership') }}" class="panel">
+    <h2>Add Membership Period</h2>
+    <label>Group
+      <select name="group_id">{% for g in groups %}<option value="{{ g.id }}">{{ g.name }}</option>{% endfor %}</select>
+    </label>
+    <label>Person <input name="person_name" required></label>
+    <label>Joined <input type="date" name="joined_on" required></label>
+    <label>Left <input type="date" name="left_on"></label>
+    <button type="submit">Save</button>
+  </form>
+</section>
+<section class="panel">
+  <h2>Membership History</h2>
+  <table>
+    <tr><th>Group</th><th>Person</th><th>Joined</th><th>Left</th></tr>
+    {% for m in memberships %}
+      <tr><td>{{ m.group_id }}</td><td>{{ m.person_name }}</td><td>{{ m.joined_on }}</td><td>{{ m.left_on or 'Current' }}</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

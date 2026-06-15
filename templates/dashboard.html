@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="heading">
+  <div>
+    <h1>Balances</h1>
+    <p>Accepted expenses and recorded payments only. Review-required anomalies remain visible in import reports.</p>
+  </div>
+  <div class="actions">
+    <a class="button" href="{{ url_for('export_balances', group_id=group_id) }}">Export Balances</a>
+    <a class="button" href="{{ url_for('import_view') }}">Import CSV</a>
+  </div>
+</div>
+
+<section class="grid two">
+  <div class="panel">
+    <h2>One Number Per Person</h2>
+    <table>
+      <tr><th>Person</th><th>Net</th></tr>
+      {% for person, amount in net.items() %}
+        <tr>
+          <td><a href="{{ url_for('person_detail', person_name=person, group_id=group_id) }}">{{ person }}</a></td>
+          <td class="{{ 'positive' if amount > 0 else 'negative' if amount < 0 else '' }}">{{ amount|rupees }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+  <div class="panel">
+    <h2>Who Pays Whom</h2>
+    {% if settlements %}
+      <ul class="settlements">
+        {% for item in settlements %}
+          <li><strong>{{ item.from }}</strong> pays <strong>{{ item.to }}</strong> {{ item.amount|rupees }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No settlements needed.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="grid two">
+  <div class="panel">
+    <h2>Monthly Spending</h2>
+    {% for row in insights.monthly %}
+      <div class="bar-row">
+        <span>{{ row.label }}</span>
+        <div class="bar-track"><div class="bar-fill" style="width: {{ row.width }}%"></div></div>
+        <strong>{{ row.total|cents }}</strong>
+      </div>
+    {% else %}
+      <p>No spending yet.</p>
+    {% endfor %}
+  </div>
+  <div class="panel">
+    <h2>Spending By Category</h2>
+    {% for row in insights.by_category %}
+      <div class="bar-row">
+        <span>{{ row.label }}</span>
+        <div class="bar-track"><div class="bar-fill" style="width: {{ row.width }}%"></div></div>
+        <strong>{{ row.total|cents }}</strong>
+      </div>
+    {% else %}
+      <p>No categories yet.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="grid two">
+  <div class="panel">
+    <h2>Spending By Payer</h2>
+    {% for row in insights.by_person %}
+      <div class="bar-row">
+        <span><a href="{{ url_for('person_detail', person_name=row.label, group_id=group_id) }}">{{ row.label }}</a></span>
+        <div class="bar-track"><div class="bar-fill" style="width: {{ row.width }}%"></div></div>
+        <strong>{{ row.total|cents }}</strong>
+      </div>
+    {% else %}
+      <p>No payer totals yet.</p>
+    {% endfor %}
+  </div>
+  <div class="panel">
+    <h2>Top 5 Expenses</h2>
+    <table>
+      <tr><th>Date</th><th>Description</th><th>Amount</th></tr>
+      {% for e in insights.top_expenses %}
+        <tr>
+          <td>{{ e.expense_date }}</td>
+          <td><a href="{{ url_for('expense_detail', expense_id=e.id) }}">{{ e.description }}</a></td>
+          <td>{{ e.amount_inr_cents|cents }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Record Payment</h2>
+  <form method="post" action="{{ url_for('payments') }}" class="inline-form">
+    <input type="hidden" name="group_id" value="{{ group_id }}">
+    <input type="date" name="payment_date" required>
+    <input name="paid_by" placeholder="Paid by" required>
+    <input name="paid_to" placeholder="Paid to" required>
+    <input name="amount" type="number" step="0.01" placeholder="Amount INR" required>
+    <input name="notes" placeholder="Notes">
+    <button type="submit">Save</button>
+  </form>
+</section>
+
+<section class="panel">
+  <div class="section-head">
+    <h2>Expense Search</h2>
+    <a class="button secondary" href="{{ url_for('export_expenses', group_id=group_id, q=filters.q, person=filters.person, category=filters.category, status=filters.status, currency=filters.currency) }}">Export Filtered CSV</a>
+  </div>
+  <form method="get" class="filter-form">
+    <input type="hidden" name="group_id" value="{{ group_id }}">
+    <input name="q" value="{{ filters.q }}" placeholder="Search description">
+    <select name="person">
+      <option value="">Any person</option>
+      {% for person in people %}
+        <option value="{{ person }}" {{ 'selected' if filters.person == person else '' }}>{{ person }}</option>
+      {% endfor %}
+    </select>
+    <select name="category">
+      <option value="">Any category</option>
+      {% for category in categories %}
+        <option value="{{ category }}" {{ 'selected' if filters.category == category else '' }}>{{ category }}</option>
+      {% endfor %}
+    </select>
+    <select name="status">
+      <option value="">Any status</option>
+      <option value="accepted" {{ 'selected' if filters.status == 'accepted' else '' }}>accepted</option>
+      <option value="excluded" {{ 'selected' if filters.status == 'excluded' else '' }}>excluded</option>
+    </select>
+    <select name="currency">
+      <option value="">Any currency</option>
+      <option value="INR" {{ 'selected' if filters.currency == 'INR' else '' }}>INR</option>
+      <option value="USD" {{ 'selected' if filters.currency == 'USD' else '' }}>USD</option>
+    </select>
+    <button type="submit">Filter</button>
+    <a class="button secondary" href="{{ url_for('dashboard', group_id=group_id) }}">Clear</a>
+  </form>
+</section>
+
+<section class="grid two">
+  <div class="panel">
+    <h2>Expenses</h2>
+    <table>
+      <tr><th>Date</th><th>Description</th><th>Category</th><th>Payer</th><th>INR</th><th>Status</th></tr>
+      {% for e in expenses %}
+        <tr>
+          <td>{{ e.expense_date }}</td>
+          <td><a href="{{ url_for('expense_detail', expense_id=e.id) }}">{{ e.description }}</a></td>
+          <td>{{ e.category }}</td>
+          <td>{{ e.paid_by }}</td>
+          <td>{{ e.amount_inr_cents|cents }}</td>
+          <td><span class="pill">{{ e.status }}</span></td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+  <div class="panel">
+    <h2>Import Batches</h2>
+    <table>
+      <tr><th>ID</th><th>File</th><th>Accepted</th><th>Skipped</th><th>Status</th></tr>
+      {% for b in batches %}
+        <tr>
+          <td><a href="{{ url_for('import_report', batch_id=b.id) }}">#{{ b.id }}</a></td>
+          <td>{{ b.filename }}</td>
+          <td>{{ b.accepted_rows }}</td>
+          <td>{{ b.skipped_rows }}</td>
+          <td>{{ 'Rolled back' if b.rolled_back_at else 'Active' }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+</section>
+{% endblock %}

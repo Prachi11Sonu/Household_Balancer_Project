@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="heading">
+  <div>
+    <h1>Import Report #{{ batch.id }}</h1>
+    <p>{{ batch.filename }} imported at {{ batch.imported_at }}. Accepted {{ batch.accepted_rows }}, skipped {{ batch.skipped_rows }}.</p>
+    {% if batch.rolled_back_at %}
+      <p>Rolled back at {{ batch.rolled_back_at }} by {{ batch.rolled_back_by }}.</p>
+    {% endif %}
+  </div>
+  <a class="button" href="{{ url_for('dashboard') }}">Back To Balances</a>
+</div>
+
+<section class="grid two">
+  <div class="panel">
+    <h2>Batch Balance Impact</h2>
+    {% if impact %}
+      <table>
+        <tr><th>Person</th><th>Net Change</th></tr>
+        {% for person, amount in impact.items() %}
+          <tr><td>{{ person }}</td><td class="{{ 'positive' if amount > 0 else 'negative' if amount < 0 else '' }}">{{ amount|rupees }}</td></tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p>No active imported rows are linked to this batch.</p>
+    {% endif %}
+  </div>
+  <div class="panel">
+    <h2>Import Rollback</h2>
+    {% if batch.rolled_back_at %}
+      <p>This import has already been rolled back.</p>
+    {% else %}
+      <form method="post" action="{{ url_for('rollback_import', batch_id=batch.id) }}">
+        <label>Rollback Note
+          <input name="rollback_note" placeholder="Reason for undoing this import">
+        </label>
+        <button type="submit">Rollback Entire Import</button>
+      </form>
+    {% endif %}
+  </div>
+</section>
+
+<section class="panel">
+  <table>
+    <tr><th>Row</th><th>Code</th><th>Severity</th><th>Message</th><th>Policy</th><th>Action</th><th>Balance Impact</th><th>Review</th></tr>
+    {% for a in anomalies %}
+      {% set row_impact = impacts[a.id] %}
+      <tr>
+        <td>{{ a.row_number }}</td>
+        <td><code>{{ a.code }}</code></td>
+        <td><span class="pill {{ a.severity }}">{{ a.severity }}</span></td>
+        <td>{{ a.message }}</td>
+        <td>{{ a.policy }}</td>
+        <td>{{ a.action }}</td>
+        <td>
+          {% if row_impact.current %}
+            <strong>Current</strong>
+            <ul class="compact-list">
+              {% for person, amount in row_impact.current.items() %}
+                <li>{{ person }}: {{ amount|rupees }}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <span class="muted">No active impact</span>
+          {% endif %}
+          {% if row_impact.preview %}
+            <strong>Toggle Preview</strong>
+            <ul class="compact-list">
+              {% for person, amount in row_impact.preview.items() %}
+                <li>{{ person }}: {{ amount|rupees }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </td>
+        <td>
+          {% if a.review_required %}
+            <form method="post" action="{{ url_for('resolve_anomaly', anomaly_id=a.id) }}" class="resolve-form">
+              <select name="resolution_action">
+                <option value="approve">Approve cleanup</option>
+                <option value="accept_row">Include row</option>
+                <option value="exclude_row">Exclude row</option>
+                <option value="correct_payer">Correct payer</option>
+                <option value="change_currency">Change currency/amount</option>
+                <option value="merge_duplicate">Merge duplicate</option>
+              </select>
+              <input name="new_payer" placeholder="New payer">
+              <div class="mini-grid">
+                <select name="currency">
+                  <option value="INR">INR</option>
+                  <option value="USD">USD</option>
+                </select>
+                <input name="amount" type="number" step="0.01" placeholder="Amount">
+              </div>
+              <div class="mini-grid">
+                <input name="keep_expense_id" placeholder="Keep expense ID">
+                <input name="drop_expense_id" placeholder="Drop expense ID">
+              </div>
+              <input name="resolution_note" placeholder="Resolution note">
+              <button type="submit">Apply</button>
+            </form>
+          {% else %}
+            <span class="pill">Done</span>
+            {% if a.resolved_action %}<p>{{ a.resolved_action }} {{ a.resolved_at or '' }}</p>{% endif %}
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

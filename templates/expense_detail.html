@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="heading">
+  <div>
+    <h1>{{ expense.description }}</h1>
+    <p>Row {{ expense.source_row or 'manual' }} · {{ expense.expense_date }} · paid by {{ expense.paid_by }}</p>
+  </div>
+  <a class="button" href="{{ url_for('dashboard', group_id=expense.group_id) }}">Back</a>
+</div>
+<section class="grid two">
+  <div class="panel">
+    <h2>Expense</h2>
+    <table>
+      <tr><th>Original</th><td>{{ expense.amount_original_cents|cents }} {{ expense.currency }}</td></tr>
+      <tr><th>FX</th><td>{{ expense.fx_rate }}</td></tr>
+      <tr><th>INR</th><td>{{ expense.amount_inr_cents|cents }}</td></tr>
+      <tr><th>Split</th><td>{{ expense.split_type }}</td></tr>
+      <tr><th>Status</th><td>{{ expense.status }}</td></tr>
+      <tr><th>Notes</th><td>{{ expense.notes or '' }}</td></tr>
+    </table>
+  </div>
+  <div class="panel">
+    <h2>Person Shares</h2>
+    <table>
+      <tr><th>Person</th><th>Share</th><th>Basis</th></tr>
+      {% for split in splits %}
+        <tr><td>{{ split.person_name }}</td><td>{{ split.share_cents|cents }}</td><td>{{ split.basis }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</section>
+<section class="panel">
+  <h2>Related Import Anomalies</h2>
+  {% if anomalies %}
+    <table>
+      <tr><th>Code</th><th>Message</th><th>Policy</th><th>Action</th></tr>
+      {% for a in anomalies %}
+        <tr><td><code>{{ a.code }}</code></td><td>{{ a.message }}</td><td>{{ a.policy }}</td><td>{{ a.action }}</td></tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>No anomalies were recorded for this expense row.</p>
+  {% endif %}
+</section>
+{% endblock %}

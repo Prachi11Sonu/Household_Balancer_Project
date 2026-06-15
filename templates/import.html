@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="heading">
+  <div>
+    <h1>Import Expenses CSV</h1>
+    <p>Upload the original export exactly as provided. The importer detects anomalies and writes a report.</p>
+  </div>
+</div>
+<form method="post" enctype="multipart/form-data" class="panel">
+  <label>Group
+    <select name="group_id">{% for g in groups %}<option value="{{ g.id }}">{{ g.name }}</option>{% endfor %}</select>
+  </label>
+  <label>CSV File <input type="file" name="csv_file" accept=".csv" required></label>
+  <button type="submit">Run Import</button>
+</form>
+{% endblock %}

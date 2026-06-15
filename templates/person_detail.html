@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="heading">
+  <div>
+    <h1>{{ person }}</h1>
+    <p>Balance trace for expenses, shares, and payments involving this person.</p>
+  </div>
+  <a class="button" href="{{ url_for('dashboard', group_id=group_id) }}">Back</a>
+</div>
+
+<section class="panel">
+  <h2>Net Balance</h2>
+  <p class="{{ 'positive' if net > 0 else 'negative' if net < 0 else '' }}">{{ net|rupees }}</p>
+</section>
+
+<section class="panel">
+  <h2>Running Ledger</h2>
+  <table>
+    <tr><th>Date</th><th>Type</th><th>Description</th><th>Paid</th><th>Owed</th><th>Sent</th><th>Received</th><th>Balance After</th></tr>
+    {% for item in ledger %}
+      <tr>
+        <td>{{ item.date }}</td>
+        <td>{{ item.kind }}</td>
+        <td>{{ item.description }}</td>
+        <td>{{ item.paid|cents }}</td>
+        <td>{{ item.owed|cents }}</td>
+        <td>{{ item.sent|cents }}</td>
+        <td>{{ item.received|cents }}</td>
+        <td class="{{ 'positive' if item.running > 0 else 'negative' if item.running < 0 else '' }}">{{ item.running|cents }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8">No ledger activity yet.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+
+<section class="grid two">
+  <div class="panel">
+    <h2>Expenses Paid</h2>
+    <table>
+      <tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th></tr>
+      {% for e in paid_expenses %}
+        <tr>
+          <td>{{ e.expense_date }}</td>
+          <td><a href="{{ url_for('expense_detail', expense_id=e.id) }}">{{ e.description }}</a></td>
+          <td>{{ e.category }}</td>
+          <td>{{ e.amount_inr_cents|cents }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+  <div class="panel">
+    <h2>Shares Owed</h2>
+    <table>
+      <tr><th>Date</th><th>Description</th><th>Category</th><th>Share</th></tr>
+      {% for e in owed_splits %}
+        <tr>
+          <td>{{ e.expense_date }}</td>
+          <td><a href="{{ url_for('expense_detail', expense_id=e.id) }}">{{ e.description }}</a></td>
+          <td>{{ e.category }}</td>
+          <td>{{ e.share_cents|cents }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Payments</h2>
+  <table>
+    <tr><th>Date</th><th>From</th><th>To</th><th>Amount</th><th>Notes</th></tr>
+    {% for p in payments %}
+      <tr>
+        <td>{{ p.payment_date }}</td>
+        <td>{{ p.paid_by }}</td>
+        <td>{{ p.paid_to }}</td>
+        <td>{{ p.amount_inr_cents|cents }}</td>
+        <td>{{ p.notes or '' }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}
