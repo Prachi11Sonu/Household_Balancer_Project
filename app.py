@@ -15,6 +15,7 @@ from hashlib import sha256
 from pathlib import Path
 
 from flask import Flask, flash, redirect, render_template, request, session, url_for
+from whitenoise import WhiteNoise
 
 
 APP_ROOT = Path(__file__).parent
@@ -47,6 +48,7 @@ MEMBERSHIP_POLICY = {
 
 
 app = Flask(__name__)
+app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/')
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-for-deploy")
 
 
